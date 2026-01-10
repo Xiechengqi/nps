@@ -42,7 +42,7 @@ jobs:
       - name: Build nps for ${{ matrix.target }}
         run: |
           GOOS=linux GOARCH=${{ matrix.goarch }} CGO_ENABLED=0 go build \
-            -ldflags "-s -w -buildid=" \
+            -ldflags "-s -w -buildid= -X ehang.io/nps/web.AssetVersion=${{ github.sha }}" \
             -o release-files/nps-${{ matrix.target }} \
             ./cmd/nps/nps.go
 

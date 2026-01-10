@@ -22,6 +22,7 @@ import (
 	"ehang.io/nps/lib/version"
 	"ehang.io/nps/server/connection"
 	"ehang.io/nps/server/tool"
+	"ehang.io/nps/web"
 	"ehang.io/nps/web/routers"
 
 	"ehang.io/nps/lib/common"
@@ -70,6 +71,10 @@ func main() {
 		if strings.Contains(v, "-log_path=") {
 			logPath = strings.Replace(v, "-log_path=", "", -1)
 		}
+	}
+
+	if err := web.SyncAssetsToRunPath(common.GetRunPath()); err != nil {
+		log.Fatalln("sync embedded web assets error:", err)
 	}
 
 	if err := beego.LoadAppConfig("ini", filepath.Join(common.GetRunPath(), "conf", "nps.conf")); err != nil {
