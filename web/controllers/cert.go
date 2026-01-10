@@ -61,6 +61,10 @@ func resolveKeyOrPath(input string) (string, error) {
 
 // List 证书列表页（兼容路由 /cert/list）
 func (s *CertController) List() {
+	if s.Ctx.Request.Method == "POST" {
+		s.GetCertList()
+		return
+	}
 	s.Index()
 }
 
