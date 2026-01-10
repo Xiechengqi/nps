@@ -64,8 +64,8 @@
         onPostBody: function (data) { if ($(this)[0].locale != undefined ) $('body').setLang ('#table'); },
         detailFormatter: function (index, row, element) {
             return '<b langtag="word-remark"></b>: ' + (row.Remark || '-') + '&emsp;'
-                    + '<b langtag="word-httpscert"></b>: ' + (row.CertContent ? '已配置' : '未配置') + '&emsp;'
-                    + '<b langtag="word-httpskey"></b>: ' + (row.KeyContent ? '已配置' : '未配置') + '&emsp;'
+                    + '<b langtag="word-httpscert"></b>: ' + ((row.CertPath || row.CertContent) ? '已配置' : '未配置') + '&emsp;'
+                    + '<b langtag="word-httpskey"></b>: ' + ((row.KeyPath || row.KeyContent) ? '已配置' : '未配置') + '&emsp;'
         },
         //表格的列
         columns: [

@@ -59,6 +59,17 @@ func resolveKeyOrPath(input string) (string, error) {
 	return content, nil
 }
 
+func isInlineCert(input string) bool {
+	return strings.Contains(input, "-----BEGIN CERTIFICATE-----")
+}
+
+func isInlineKey(input string) bool {
+	return strings.Contains(input, "-----BEGIN PRIVATE KEY-----") ||
+		strings.Contains(input, "-----BEGIN RSA PRIVATE KEY-----") ||
+		strings.Contains(input, "-----BEGIN EC PRIVATE KEY-----") ||
+		strings.Contains(input, "-----BEGIN ENCRYPTED PRIVATE KEY-----")
+}
+
 // List 证书列表页（兼容路由 /cert/list）
 func (s *CertController) List() {
 	if s.Ctx.Request.Method == "POST" {
@@ -93,23 +104,40 @@ func (s *CertController) Add() {
 		s.SetInfo("add certificate")
 		s.display("index/cadd")
 	} else {
-		certContent, err := resolveCertOrPath(s.getEscapeString("cert_content"))
+		rawCert := s.getEscapeString("cert_content")
+		rawKey := s.getEscapeString("key_content")
+
+		_, err := resolveCertOrPath(rawCert)
 		if err != nil {
 			s.AjaxErr(err.Error())
 			return
 		}
-		keyContent, err := resolveKeyOrPath(s.getEscapeString("key_content"))
+		_, err = resolveKeyOrPath(rawKey)
 		if err != nil {
 			s.AjaxErr(err.Error())
 			return
 		}
 
 		c := &file.DomainCert{
-			Name:        s.getEscapeString("name"),
-			Domain:      s.getEscapeString("domain"),
-			CertContent: certContent,
-			KeyContent:  keyContent,
-			Remark:      s.getEscapeString("remark"),
+			Name:   s.getEscapeString("name"),
+			Domain: s.getEscapeString("domain"),
+			Remark: s.getEscapeString("remark"),
+		}
+
+		if isInlineCert(rawCert) {
+			c.CertContent = rawCert
+			c.CertPath = ""
+		} else {
+			c.CertContent = ""
+			c.CertPath = rawCert
+		}
+
+		if isInlineKey(rawKey) {
+			c.KeyContent = rawKey
+			c.KeyPath = ""
+		} else {
+			c.KeyContent = ""
+			c.KeyPath = rawKey
 		}
 
 		if err := file.GetDb().NewCert(c); err != nil {
@@ -132,12 +160,15 @@ func (s *CertController) Edit() {
 		s.SetInfo("edit certificate")
 		s.display("index/cedit")
 	} else {
-		certContent, err := resolveCertOrPath(s.getEscapeString("cert_content"))
+		rawCert := s.getEscapeString("cert_content")
+		rawKey := s.getEscapeString("key_content")
+
+		_, err := resolveCertOrPath(rawCert)
 		if err != nil {
 			s.AjaxErr(err.Error())
 			return
 		}
-		keyContent, err := resolveKeyOrPath(s.getEscapeString("key_content"))
+		_, err = resolveKeyOrPath(rawKey)
 		if err != nil {
 			s.AjaxErr(err.Error())
 			return
@@ -151,9 +182,23 @@ func (s *CertController) Edit() {
 
 		c.Name = s.getEscapeString("name")
 		c.Domain = s.getEscapeString("domain")
-		c.CertContent = certContent
-		c.KeyContent = keyContent
 		c.Remark = s.getEscapeString("remark")
+
+		if isInlineCert(rawCert) {
+			c.CertContent = rawCert
+			c.CertPath = ""
+		} else {
+			c.CertContent = ""
+			c.CertPath = rawCert
+		}
+
+		if isInlineKey(rawKey) {
+			c.KeyContent = rawKey
+			c.KeyPath = ""
+		} else {
+			c.KeyContent = ""
+			c.KeyPath = rawKey
+		}
 
 		if err := file.GetDb().UpdateCert(c); err != nil {
 			s.AjaxErr(err.Error())

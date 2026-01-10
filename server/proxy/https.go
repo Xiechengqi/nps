@@ -53,7 +53,35 @@ func (https *HttpsServer) Start() error {
 					return
 				}
 				logs.Debug("使用统一证书，证书ID: %d", host.CertId)
-				https.cert(host, c, rb, cert.CertContent, cert.KeyContent)
+				certContent := cert.CertContent
+				keyContent := cert.KeyContent
+				if cert.CertPath != "" || cert.KeyPath != "" {
+					if cert.CertPath == "" || cert.KeyPath == "" {
+						logs.Debug("统一证书路径不完整，回退到默认证书")
+						https.handleHttps2(c, serverName, rb, r)
+						return
+					}
+					if !common.FileExists(cert.CertPath) || !common.FileExists(cert.KeyPath) {
+						logs.Debug("统一证书文件不存在，回退到默认证书")
+						https.handleHttps2(c, serverName, rb, r)
+						return
+					}
+					certBytes, err := common.ReadAllFromFile(cert.CertPath)
+					if err != nil {
+						logs.Debug("读取统一证书文件失败，回退到默认证书: %v", err)
+						https.handleHttps2(c, serverName, rb, r)
+						return
+					}
+					keyBytes, err := common.ReadAllFromFile(cert.KeyPath)
+					if err != nil {
+						logs.Debug("读取统一证书私钥文件失败，回退到默认证书: %v", err)
+						https.handleHttps2(c, serverName, rb, r)
+						return
+					}
+					certContent = string(certBytes)
+					keyContent = string(keyBytes)
+				}
+				https.cert(host, c, rb, certContent, keyContent)
 				return
 			}
 
