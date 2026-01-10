@@ -182,6 +182,60 @@ function notifyError(msg, title) { return notify('error', msg, title); }
 function notifyInfo(msg, title) { return notify('info', msg, title); }
 function notifyWarning(msg, title) { return notify('warning', msg, title); }
 
+function langget(key, fallback) {
+	try {
+		if (!languages || !languages['content']) return fallback;
+		var langobj = languages['content'][key];
+		if ($.type(langobj) == 'undefined') return fallback;
+		if ($.type(langobj) == 'string') return langobj;
+		if ($.type(langobj) == 'array') langobj = langobj[Math.floor((Math.random()*langobj.length))];
+		if ($.type(langobj) == 'object') return (langobj[languages['current']] || langobj[languages['default']] || fallback);
+	} catch (e) {}
+	return fallback;
+}
+
+function confirmToast(message, onConfirm) {
+	initToastr();
+	if (typeof window === 'undefined' || typeof window.toastr === 'undefined') {
+		if (confirm(message)) onConfirm();
+		return;
+	}
+
+	var yesText = langget('word-yes', 'Yes');
+	var noText = langget('word-no', 'No');
+	var safeMessage = $('<div/>').text(message).html();
+	var safeYesText = $('<div/>').text(yesText).html();
+	var safeNoText = $('<div/>').text(noText).html();
+	var toastId = 'toast_confirm_' + Date.now() + '_' + Math.floor(Math.random() * 1000000);
+	var yesId = toastId + '_yes';
+	var noId = toastId + '_no';
+
+	var html = ''
+		+ '<div>' + safeMessage + '</div>'
+		+ '<div style="margin-top: 10px;">'
+		+ '<button type="button" class="btn btn-primary btn-xs" id="' + yesId + '" style="margin-right: 8px;">' + safeYesText + '</button>'
+		+ '<button type="button" class="btn btn-default btn-xs" id="' + noId + '">' + safeNoText + '</button>'
+		+ '</div>';
+
+	var toast = toastr.warning(html, '', {
+		timeOut: 0,
+		extendedTimeOut: 0,
+		tapToDismiss: false,
+		closeButton: true,
+		escapeHtml: false,
+		preventDuplicates: false,
+		onShown: function () {
+			$('#' + yesId).off('click').on('click', function () {
+				toastr.clear(toast);
+				onConfirm();
+			});
+			$('#' + noId).off('click').on('click', function () {
+				toastr.clear(toast);
+			});
+		}
+	});
+}
+
 function submitform(action, url, postdata) {
     postsubmit = false;
     switch (action) {
@@ -194,8 +248,25 @@ function submitform(action, url, postdata) {
 					var langobj = languages['content']['confirm'][action];
 					confirmText = (langobj[languages['current']] || langobj[languages['default']] || confirmText);
 				}
-	            if (!confirm(confirmText)) return;
-	            postsubmit = true;
+				confirmToast(confirmText, function () {
+					postsubmit = true;
+					$.ajax({
+						type: "POST",
+						url: url,
+						data: postdata,
+						success: function (res) {
+							if (res.status) {
+								notifySuccess(langreply(res.msg));
+							} else {
+								notifyError(langreply(res.msg));
+							}
+							if (res.status) {
+								document.location.reload();
+							}
+						}
+					});
+				});
+	            return;
         case 'add':
         case 'edit':
 	            $.ajax({
