@@ -132,11 +132,55 @@ var chartdatas = {};
 var postsubmit;
 
 function langreply(langstr) {
+	if (!languages || !languages['content'] || !languages['content']['reply']) return langstr;
     var langobj = languages['content']['reply'][langstr.replace(/[\s,\.\?]*/g,"").toLowerCase()];
     if ($.type(langobj) == 'undefined') return langstr
     langobj = (langobj[languages['current']] || langobj[languages['default']] || langstr);
     return langobj
 }
+
+var toastrInited = false;
+
+function initToastr() {
+	if (toastrInited) return;
+	if (typeof window === 'undefined' || typeof window.toastr === 'undefined') return;
+	toastrInited = true;
+	toastr.options = {
+		"closeButton": true,
+		"progressBar": true,
+		"newestOnTop": true,
+		"preventDuplicates": true,
+		"positionClass": "toast-bottom-right",
+		"timeOut": 2500,
+		"extendedTimeOut": 1500,
+		"showDuration": 200,
+		"hideDuration": 200,
+		"showMethod": "fadeIn",
+		"hideMethod": "fadeOut"
+	};
+}
+
+function notify(type, msg, title) {
+	initToastr();
+	if (typeof window !== 'undefined' && typeof window.toastr !== 'undefined') {
+		switch (type) {
+			case 'success':
+				return toastr.success(msg, title);
+			case 'error':
+				return toastr.error(msg, title);
+			case 'warning':
+				return toastr.warning(msg, title);
+			default:
+				return toastr.info(msg, title);
+		}
+	}
+	alert(msg);
+}
+
+function notifySuccess(msg, title) { return notify('success', msg, title); }
+function notifyError(msg, title) { return notify('error', msg, title); }
+function notifyInfo(msg, title) { return notify('info', msg, title); }
+function notifyWarning(msg, title) { return notify('warning', msg, title); }
 
 function submitform(action, url, postdata) {
     postsubmit = false;
@@ -144,41 +188,52 @@ function submitform(action, url, postdata) {
         case 'start':
         case 'stop':
         case 'delete':
-		case 'copy':
-            var langobj = languages['content']['confirm'][action];
-            action = (langobj[languages['current']] || langobj[languages['default']] || 'Are you sure you want to ' + action + ' it?');
-            if (! confirm(action)) return;
-            postsubmit = true;
+			case 'copy':
+	            var confirmText = 'Are you sure you want to ' + action + ' it?';
+				if (languages && languages['content'] && languages['content']['confirm'] && languages['content']['confirm'][action]) {
+					var langobj = languages['content']['confirm'][action];
+					confirmText = (langobj[languages['current']] || langobj[languages['default']] || confirmText);
+				}
+	            if (!confirm(confirmText)) return;
+	            postsubmit = true;
         case 'add':
         case 'edit':
-            $.ajax({
-                type: "POST",
-                url: url,
-                data: postdata,
-                success: function (res) {
-                    alert(langreply(res.msg));
-                    if (res.status) {
-                        if (postsubmit) {
-							document.location.reload();
-						}else{
-							window.location.href= document.referrer
+	            $.ajax({
+	                type: "POST",
+	                url: url,
+	                data: postdata,
+	                success: function (res) {
+						if (res.status) {
+							notifySuccess(langreply(res.msg));
+						} else {
+							notifyError(langreply(res.msg));
 						}
-                    }
-                }
-            });
-			return;
-		case 'global':
-			$.ajax({
-				type: "POST",
-				url: url,
-				data: postdata,
-				success: function (res) {
-					alert(langreply(res.msg));
-					if (res.status) {
-						document.location.reload();
+	                    if (res.status) {
+	                        if (postsubmit) {
+								document.location.reload();
+							}else{
+								window.location.href= document.referrer
+							}
+	                    }
+	                }
+	            });
+				return;
+			case 'global':
+				$.ajax({
+					type: "POST",
+					url: url,
+					data: postdata,
+					success: function (res) {
+						if (res.status) {
+							notifySuccess(langreply(res.msg));
+						} else {
+							notifyError(langreply(res.msg));
+						}
+						if (res.status) {
+							document.location.reload();
+						}
 					}
-				}
-			});
+				});
     }
 }
 
