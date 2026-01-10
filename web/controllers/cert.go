@@ -1,13 +1,56 @@
 package controllers
 
 import (
-	"fmt"
+	"ehang.io/nps/lib/common"
 	"ehang.io/nps/lib/file"
+	"fmt"
 	"strings"
 )
 
 type CertController struct {
 	BaseController
+}
+
+func resolveCertOrPath(input string) (string, error) {
+	if strings.Contains(input, "-----BEGIN CERTIFICATE-----") {
+		return input, nil
+	}
+	if input == "" {
+		return "", fmt.Errorf("certificate is empty")
+	}
+	if !common.FileExists(input) {
+		return "", fmt.Errorf("certificate file not found: %s", input)
+	}
+	b, err := common.ReadAllFromFile(input)
+	if err != nil {
+		return "", fmt.Errorf("read certificate file error: %w", err)
+	}
+	content := string(b)
+	if !strings.Contains(content, "-----BEGIN CERTIFICATE-----") {
+		return "", fmt.Errorf("invalid certificate format")
+	}
+	return content, nil
+}
+
+func resolveKeyOrPath(input string) (string, error) {
+	if strings.Contains(input, "-----BEGIN PRIVATE KEY-----") || strings.Contains(input, "-----BEGIN RSA PRIVATE KEY-----") {
+		return input, nil
+	}
+	if input == "" {
+		return "", fmt.Errorf("key is empty")
+	}
+	if !common.FileExists(input) {
+		return "", fmt.Errorf("key file not found: %s", input)
+	}
+	b, err := common.ReadAllFromFile(input)
+	if err != nil {
+		return "", fmt.Errorf("read key file error: %w", err)
+	}
+	content := string(b)
+	if !strings.Contains(content, "-----BEGIN PRIVATE KEY-----") && !strings.Contains(content, "-----BEGIN RSA PRIVATE KEY-----") {
+		return "", fmt.Errorf("invalid key format")
+	}
+	return content, nil
 }
 
 // List 证书列表页（兼容路由 /cert/list）
@@ -40,16 +83,14 @@ func (s *CertController) Add() {
 		s.SetInfo("add certificate")
 		s.display("index/cadd")
 	} else {
-		certContent := s.getEscapeString("cert_content")
-		keyContent := s.getEscapeString("key_content")
-
-		// 简单验证：检查是否是有效的证书格式
-		if !strings.Contains(certContent, "-----BEGIN CERTIFICATE-----") {
-			s.AjaxErr("invalid certificate format")
+		certContent, err := resolveCertOrPath(s.getEscapeString("cert_content"))
+		if err != nil {
+			s.AjaxErr(err.Error())
 			return
 		}
-		if !strings.Contains(keyContent, "-----BEGIN PRIVATE KEY-----") && !strings.Contains(keyContent, "-----BEGIN RSA PRIVATE KEY-----") {
-			s.AjaxErr("invalid key format")
+		keyContent, err := resolveKeyOrPath(s.getEscapeString("key_content"))
+		if err != nil {
+			s.AjaxErr(err.Error())
 			return
 		}
 
@@ -81,16 +122,14 @@ func (s *CertController) Edit() {
 		s.SetInfo("edit certificate")
 		s.display("index/cedit")
 	} else {
-		certContent := s.getEscapeString("cert_content")
-		keyContent := s.getEscapeString("key_content")
-
-		// 简单验证：检查是否是有效的证书格式
-		if !strings.Contains(certContent, "-----BEGIN CERTIFICATE-----") {
-			s.AjaxErr("invalid certificate format")
+		certContent, err := resolveCertOrPath(s.getEscapeString("cert_content"))
+		if err != nil {
+			s.AjaxErr(err.Error())
 			return
 		}
-		if !strings.Contains(keyContent, "-----BEGIN PRIVATE KEY-----") && !strings.Contains(keyContent, "-----BEGIN RSA PRIVATE KEY-----") {
-			s.AjaxErr("invalid key format")
+		keyContent, err := resolveKeyOrPath(s.getEscapeString("key_content"))
+		if err != nil {
+			s.AjaxErr(err.Error())
 			return
 		}
 
