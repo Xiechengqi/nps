@@ -33,7 +33,10 @@ func resolveCertOrPath(input string) (string, error) {
 }
 
 func resolveKeyOrPath(input string) (string, error) {
-	if strings.Contains(input, "-----BEGIN PRIVATE KEY-----") || strings.Contains(input, "-----BEGIN RSA PRIVATE KEY-----") {
+	if strings.Contains(input, "-----BEGIN PRIVATE KEY-----") ||
+		strings.Contains(input, "-----BEGIN RSA PRIVATE KEY-----") ||
+		strings.Contains(input, "-----BEGIN EC PRIVATE KEY-----") ||
+		strings.Contains(input, "-----BEGIN ENCRYPTED PRIVATE KEY-----") {
 		return input, nil
 	}
 	if input == "" {
@@ -47,7 +50,10 @@ func resolveKeyOrPath(input string) (string, error) {
 		return "", fmt.Errorf("read key file error: %w", err)
 	}
 	content := string(b)
-	if !strings.Contains(content, "-----BEGIN PRIVATE KEY-----") && !strings.Contains(content, "-----BEGIN RSA PRIVATE KEY-----") {
+	if !strings.Contains(content, "-----BEGIN PRIVATE KEY-----") &&
+		!strings.Contains(content, "-----BEGIN RSA PRIVATE KEY-----") &&
+		!strings.Contains(content, "-----BEGIN EC PRIVATE KEY-----") &&
+		!strings.Contains(content, "-----BEGIN ENCRYPTED PRIVATE KEY-----") {
 		return "", fmt.Errorf("invalid key format")
 	}
 	return content, nil
