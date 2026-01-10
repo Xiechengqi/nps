@@ -10,6 +10,11 @@ type CertController struct {
 	BaseController
 }
 
+// List 证书列表页（兼容路由 /cert/list）
+func (s *CertController) List() {
+	s.Index()
+}
+
 // Index 证书列表页
 func (s *CertController) Index() {
 	s.Data["menu"] = "cert"
