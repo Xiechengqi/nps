@@ -9,10 +9,6 @@ on:
 
 permissions:
   contents: write
-  packages: write
-
-env:
-  REGISTRY: ghcr.io
 
 jobs:
   build-binary:
@@ -56,52 +52,8 @@ jobs:
           name: nps-${{ matrix.target }}
           path: release-files/
 
-  build-docker:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        docker: [nps, npc]
-        arch:
-          - arch: amd64
-            platform: linux/amd64
-          - arch: arm64
-            platform: linux/arm64
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Convert repository name to lowercase
-        id: repo
-        run: |
-          echo "image_name=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log into registry ${{ env.REGISTRY }}
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push ${{ matrix.docker }} (${{ matrix.arch.arch }})
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile.${{ matrix.docker }}
-          platforms: ${{ matrix.arch.platform }}
-          push: true
-          tags: ${{ env.REGISTRY }}/${{ steps.repo.outputs.image_name }}:${{ matrix.docker }}-${{ matrix.arch.arch }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          provenance: false
-
   release:
-    needs: [build-binary, build-docker]
+    needs: build-binary
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -159,22 +111,10 @@ jobs:
 
             ---
 
-            ### 二进制下载
+            ### 下载
 
             - **Linux AMD64**: `npc-linux-amd64`, `nps-linux-amd64`
             - **Linux ARM64**: `npc-linux-arm64`, `nps-linux-arm64`
-
-            ### Docker 镜像
-
-            ```bash
-            # NPS (服务端)
-            docker pull ghcr.io/${{ github.repository }}:nps-amd64
-            docker pull ghcr.io/${{ github.repository }}:nps-arm64
-
-            # NPC (客户端)
-            docker pull ghcr.io/${{ github.repository }}:npc-amd64
-            docker pull ghcr.io/${{ github.repository }}:npc-arm64
-            ```
 
             ### 快速安装
 
