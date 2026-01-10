@@ -109,6 +109,9 @@ func (s *JsonDb) LoadGlobalFromJsonFile() {
 }
 
 func (s *JsonDb) LoadCertFromJsonFile() {
+	if !common.FileExists(s.CertFilePath) {
+		return
+	}
 	loadSyncMapFromFile(s.CertFilePath, func(v string) {
 		post := new(DomainCert)
 		if json.Unmarshal([]byte(v), &post) != nil {
