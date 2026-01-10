@@ -44,6 +44,20 @@ func (https *HttpsServer) Start() error {
 			logs.Debug("the url %s can't be parsed!,remote addr %s", serverName, c.RemoteAddr().String())
 			return
 		} else {
+			// 如果 Host 关联了统一证书，从证书存储获取
+			if host.CertId > 0 {
+				cert, err := file.GetDb().GetCertById(host.CertId)
+				if err != nil || cert == nil {
+					logs.Debug("统一证书不存在，回退到默认证书")
+					https.handleHttps2(c, serverName, rb, r)
+					return
+				}
+				logs.Debug("使用统一证书，证书ID: %d", host.CertId)
+				https.cert(host, c, rb, cert.CertContent, cert.KeyContent)
+				return
+			}
+
+			// 原有逻辑（手动输入或路径）
 			if host.CertFilePath == "" || host.KeyFilePath == "" {
 				logs.Debug("加载客户端本地证书")
 				https.handleHttps2(c, serverName, rb, r)

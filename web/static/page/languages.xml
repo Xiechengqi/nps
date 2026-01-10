@@ -787,6 +787,54 @@
 		<en-US>Create Time</en-US>
 	</lang>
 
+	<lang id="word-certificate">
+		<zh-CN>域名证书</zh-CN>
+		<en-US>Domain Certificate</en-US>
+	</lang>
+	<lang id="word-cert-select">
+		<zh-CN>选择证书</zh-CN>
+		<en-US>Select Certificate</en-US>
+	</lang>
+	<lang id="word-cert-name">
+		<zh-CN>证书名称</zh-CN>
+		<en-US>Certificate Name</en-US>
+	</lang>
+	<lang id="word-domain">
+		<zh-CN>关联域名</zh-CN>
+		<en-US>Associated Domain</en-US>
+	</lang>
+
+	<lang id="page-certlist">
+		<zh-CN>证书列表</zh-CN>
+		<en-US>Certificate List</en-US>
+	</lang>
+	<lang id="page-certadd">
+		<zh-CN>添加证书</zh-CN>
+		<en-US>Add Certificate</en-US>
+	</lang>
+	<lang id="page-certifiedit">
+		<zh-CN>编辑证书</zh-CN>
+		<en-US>Edit Certificate</en-US>
+	</lang>
+
+	<lang id="info-certname">
+		<zh-CN>证书名称，用于下拉框显示</zh-CN>
+		<en-US>Certificate name for dropdown display</en-US>
+	</lang>
+	<lang id="info-certdomain">
+		<zh-CN>关联的域名，如 example.com</zh-CN>
+		<en-US>Associated domain, such as example.com</en-US>
+	</lang>
+
+	<lang id="msg-cert-delete-confirm">
+		<zh-CN>确定要删除该证书吗？删除后所有使用该证书的域名将无法使用。</zh-CN>
+		<en-US>Are you sure you want to delete this certificate? All domains using this certificate will be affected.</en-US>
+	</lang>
+	<lang id="msg-cert-used-by-host">
+		<zh-CN>该证书正在被 N 个域名使用，无法删除。</zh-CN>
+		<en-US>This certificate is used by N domain(s) and cannot be deleted.</en-US>
+	</lang>
+
 	<lang id="word-lastonlinetime">
 		<zh-CN>上次在线时间</zh-CN>
 		<en-US>Last Online Time</en-US>

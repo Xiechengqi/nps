@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"ehang.io/nps/lib/common"
 	"ehang.io/nps/lib/crypt"
@@ -31,6 +32,7 @@ func GetDb() *DbUtils {
 		jsonDb.LoadTaskFromJsonFile()
 		jsonDb.LoadHostFromJsonFile()
 		jsonDb.LoadGlobalFromJsonFile()
+		jsonDb.LoadCertFromJsonFile()
 		Db = &DbUtils{JsonDb: jsonDb}
 	})
 	return Db
@@ -388,4 +390,81 @@ func (s *DbUtils) GetInfoByHost(host string, r *http.Request) (h *Host, err erro
 	}
 	err = errors.New("The host could not be parsed")
 	return
+}
+
+// GetCertList 获取证书列表（分页）
+func (s *DbUtils) GetCertList(start, length int, search string) ([]*DomainCert, int) {
+	list := make([]*DomainCert, 0)
+	var cnt int
+	keys := GetMapKeys(s.JsonDb.Certs, true, "", "")
+	for _, key := range keys {
+		if value, ok := s.JsonDb.Certs.Load(key); ok {
+			v := value.(*DomainCert)
+			if search != "" && !strings.Contains(v.Name, search) && !strings.Contains(v.Domain, search) {
+				continue
+			}
+			cnt++
+			if start--; start < 0 {
+				if length--; length >= 0 {
+					list = append(list, v)
+				}
+			}
+		}
+	}
+	return list, cnt
+}
+
+// GetCertById 根据ID获取证书
+func (s *DbUtils) GetCertById(id int) (*DomainCert, error) {
+	if v, ok := s.JsonDb.Certs.Load(id); ok {
+		return v.(*DomainCert), nil
+	}
+	return nil, errors.New("certificate not found")
+}
+
+// GetCertListForSelect 获取证书列表（下拉框用）
+func (s *DbUtils) GetCertListForSelect() []*DomainCert {
+	list := make([]*DomainCert, 0)
+	s.JsonDb.Certs.Range(func(key, value interface{}) bool {
+		v := value.(*DomainCert)
+		list = append(list, v)
+		return true
+	})
+	return list
+}
+
+// NewCert 添加证书
+func (s *DbUtils) NewCert(c *DomainCert) error {
+	c.Id = int(s.JsonDb.GetCertId())
+	c.CreateTime = time.Now().Format("2006-01-02 15:04:05")
+	s.JsonDb.Certs.Store(c.Id, c)
+	s.JsonDb.StoreCertToJsonFile()
+	return nil
+}
+
+// UpdateCert 更新证书
+func (s *DbUtils) UpdateCert(c *DomainCert) error {
+	s.JsonDb.Certs.Store(c.Id, c)
+	s.JsonDb.StoreCertToJsonFile()
+	return nil
+}
+
+// DelCert 删除证书
+func (s *DbUtils) DelCert(id int) error {
+	s.JsonDb.Certs.Delete(id)
+	s.JsonDb.StoreCertToJsonFile()
+	return nil
+}
+
+// GetCertUsedCount 统计证书被域名引用的次数
+func (s *DbUtils) GetCertUsedCount(certId int) int {
+	var count int
+	s.JsonDb.Hosts.Range(func(key, value interface{}) bool {
+		v := value.(*Host)
+		if v.CertId == certId {
+			count++
+		}
+		return true
+	})
+	return count
 }

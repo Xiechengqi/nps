@@ -184,6 +184,7 @@ type Host struct {
 	Scheme       string //http https all
 	CertFilePath string
 	KeyFilePath  string
+	CertId       int    // 关联的统一证书ID，为0表示使用手动输入
 	NoStore      bool
 	IsClose      bool
 	AutoHttps    bool // 自动https
@@ -191,6 +192,18 @@ type Host struct {
 	Client       *Client
 	Target       *Target //目标
 	Health       `json:"-"`
+	sync.RWMutex
+}
+
+// DomainCert 统一管理的域名证书
+type DomainCert struct {
+	Id          int
+	Name        string    // 证书名称（用于下拉显示）
+	Domain      string    // 关联域名
+	CertContent string    // 证书内容 (PEM格式)
+	KeyContent  string    // 私钥内容 (KEY格式)
+	CreateTime  string    // 创建时间
+	Remark      string    // 备注
 	sync.RWMutex
 }
 

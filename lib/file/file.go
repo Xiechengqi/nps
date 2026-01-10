@@ -21,6 +21,7 @@ func NewJsonDb(runPath string) *JsonDb {
 		HostFilePath:   filepath.Join(runPath, "conf", "hosts.json"),
 		ClientFilePath: filepath.Join(runPath, "conf", "clients.json"),
 		GlobalFilePath: filepath.Join(runPath, "conf", "global.json"),
+		CertFilePath:   filepath.Join(runPath, "conf", "certs.json"),
 	}
 }
 
@@ -29,15 +30,18 @@ type JsonDb struct {
 	Hosts            sync.Map
 	HostsTmp         sync.Map
 	Clients          sync.Map
+	Certs            sync.Map // 证书存储
 	Global           *Glob
 	RunPath          string
 	ClientIncreaseId int32  //client increased id
 	TaskIncreaseId   int32  //task increased id
 	HostIncreaseId   int32  //host increased id
+	CertIncreaseId   int32  //cert increased id
 	TaskFilePath     string //task file path
 	HostFilePath     string //host file path
 	ClientFilePath   string //client file path
 	GlobalFilePath   string //global file path
+	CertFilePath     string //cert file path
 }
 
 func (s *JsonDb) LoadTaskFromJsonFile() {
@@ -104,6 +108,19 @@ func (s *JsonDb) LoadGlobalFromJsonFile() {
 	})
 }
 
+func (s *JsonDb) LoadCertFromJsonFile() {
+	loadSyncMapFromFile(s.CertFilePath, func(v string) {
+		post := new(DomainCert)
+		if json.Unmarshal([]byte(v), &post) != nil {
+			return
+		}
+		s.Certs.Store(post.Id, post)
+		if post.Id > int(s.CertIncreaseId) {
+			s.CertIncreaseId = int32(post.Id)
+		}
+	})
+}
+
 func (s *JsonDb) GetClient(id int) (c *Client, err error) {
 	if v, ok := s.Clients.Load(id); ok {
 		c = v.(*Client)
@@ -155,6 +172,10 @@ func (s *JsonDb) GetTaskId() int32 {
 
 func (s *JsonDb) GetHostId() int32 {
 	return atomic.AddInt32(&s.HostIncreaseId, 1)
+}
+
+func (s *JsonDb) GetCertId() int32 {
+	return atomic.AddInt32(&s.CertIncreaseId, 1)
 }
 
 func loadSyncMapFromFile(filePath string, f func(value string)) {
@@ -254,6 +275,38 @@ func storeGlobalToFile(m *Glob, filePath string) {
 	_ = file.Close()
 	// must close file first, then rename it
 	err = os.Rename(filePath+".tmp", filePath)
+	if err != nil {
+		logs.Error(err, "store to file err, data will lost")
+	}
+}
+
+var certLock sync.Mutex
+
+func (s *JsonDb) StoreCertToJsonFile() {
+	certLock.Lock()
+	defer certLock.Unlock()
+	file, err := os.Create(s.CertFilePath + ".tmp")
+	if err != nil {
+		panic(err)
+	}
+	s.Certs.Range(func(key, value interface{}) bool {
+		b, err := json.Marshal(value.(*DomainCert))
+		if err != nil {
+			return true
+		}
+		_, err = file.Write(b)
+		if err != nil {
+			return true
+		}
+		_, err = file.Write([]byte("\n" + common.CONN_DATA_SEQ))
+		if err != nil {
+			return true
+		}
+		return true
+	})
+	_ = file.Sync()
+	_ = file.Close()
+	err = os.Rename(s.CertFilePath+".tmp", s.CertFilePath)
 	if err != nil {
 		logs.Error(err, "store to file err, data will lost")
 	}

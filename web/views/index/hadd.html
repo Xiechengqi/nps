@@ -46,20 +46,30 @@
                         </div>
                     </div>
 
-                    <div class="form-group" id="cert_file">
-                        <label class="control-label font-bold" langtag="word-httpscert"></label>
+                    <div class="form-group" id="cert_section">
+                        <label class="control-label font-bold" langtag="word-cert-select"></label>
+                        <div class="col-sm-10">
+                            <select class="form-control" name="cert_id" id="certSelect">
+                                <option value="0">-- 手动输入证书 --</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group" id="manual_cert_section">
+                        <label class="control-label font-bold">
+                            <a href="javascript:void(0)" onclick="toggleManualCert()">手动输入证书内容</a>
+                        </label>
                         <div class="col-sm-10">
                             <textarea rows="6" class="form-control" type="text" name="cert_file_path" id="pemText"
                                       placeholder="请将证书文件拖拽或将内容复制粘贴到此处，证书文件格式为：xxxx_example.com.pem。
-或者配置证书文件路径。"></textarea>
+或者配置证书文件路径。" style="display:none;"></textarea>
                         </div>
                     </div>
-                    <div class="form-group" id="key_file">
-                        <label class="control-label font-bold" langtag="word-httpskey"></label>
-                        <div class="col-sm-10">
+                    <div class="form-group" id="manual_key_section">
+                        <div class="col-sm-10 col-sm-offset-2">
                             <textarea rows="6" class="form-control" type="text" name="key_file_path" id="pemKey"
                                       placeholder="请将私钥文件拖拽或复制粘贴到此处，证书秘钥格式为：xxxx_example.com.key。
-或者配置秘钥文件路径。"></textarea>
+或者配置秘钥文件路径。" style="display:none;"></textarea>
                         </div>
                     </div>
                     <div class="form-group">
@@ -161,18 +171,68 @@
 
         $("#scheme_select").on("change", function () {
             if ($("#scheme_select").val() == "all" || $("#scheme_select").val() == "https") {
-                $("#cert_file").css("display", "block")
-                $("#key_file").css("display", "block")
+                $("#cert_section").css("display", "block")
                 $("#AutoHttps").css("display", "block")
+                // 根据证书选择器状态决定是否显示手动输入
+                if ($("#certSelect").val() == "0") {
+                    $("#manual_cert_section").css("display", "block")
+                    $("#manual_key_section").css("display", "block")
+                    $("#pemText").css("display", "block")
+                    $("#pemKey").css("display", "block")
+                } else {
+                    $("#manual_cert_section").css("display", "none")
+                    $("#manual_key_section").css("display", "none")
+                }
             } else {
-                $("#cert_file").css("display", "none")
-                $("#key_file").css("display", "none")
+                $("#cert_section").css("display", "none")
+                $("#manual_cert_section").css("display", "none")
+                $("#manual_key_section").css("display", "none")
                 $("#AutoHttps").css("display", "none")
             }
         })
 
+        // 证书选择器变更
+        $("#certSelect").on("change", function () {
+            if ($(this).val() == "0") {
+                $("#manual_cert_section").css("display", "block")
+                $("#manual_key_section").css("display", "block")
+                $("#pemText").css("display", "block")
+                $("#pemKey").css("display", "block")
+            } else {
+                $("#manual_cert_section").css("display", "none")
+                $("#manual_key_section").css("display", "none")
+                $("#pemText").css("display", "none")
+                $("#pemKey").css("display", "none")
+            }
+        })
+
+        // 加载证书列表
+        loadCertList();
         getClientList();
     })
+
+    function loadCertList() {
+        $.ajax({
+            url: '{{.web_base_url}}/cert/getcertlist',
+            type: 'POST',
+            dataType: 'json',
+            success: function(data) {
+                var options = '<option value="0">-- 手动输入证书 --</option>';
+                for (var i = 0; i < data.rows.length; i++) {
+                    options += '<option value="' + data.rows[i].Id + '">' + data.rows[i].Name + ' (' + data.rows[i].Domain + ')</option>';
+                }
+                $('#certSelect').html(options);
+            }
+        });
+    }
+
+    function toggleManualCert() {
+        $("#manual_cert_section").css("display", "block")
+        $("#manual_key_section").css("display", "block")
+        $("#pemText").css("display", "block")
+        $("#pemKey").css("display", "block")
+        $("#certSelect").val("0");
+    }
 
     function getClientList() {
         $("select[name='client_id']").empty();
