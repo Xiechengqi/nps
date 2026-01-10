@@ -309,6 +309,7 @@ func (s *IndexController) AddHost() {
 		s.display("index/hadd")
 	} else {
 		id := int(file.GetDb().JsonDb.GetHostId())
+		certId := s.GetIntNoErr("cert_id")
 		h := &file.Host{
 			Id:           id,
 			Host:         s.getEscapeString("host"),
@@ -321,7 +322,12 @@ func (s *IndexController) AddHost() {
 			Scheme:       s.getEscapeString("scheme"),
 			KeyFilePath:  s.getEscapeString("key_file_path"),
 			CertFilePath: s.getEscapeString("cert_file_path"),
+			CertId:       certId,
 			AutoHttps:    s.GetBoolNoErr("AutoHttps"),
+		}
+		if h.CertId > 0 {
+			h.CertFilePath = ""
+			h.KeyFilePath = ""
 		}
 
 		if h.Scheme == "http" {
@@ -382,6 +388,11 @@ func (s *IndexController) EditHost() {
 			h.Scheme = s.getEscapeString("scheme")
 			h.KeyFilePath = s.getEscapeString("key_file_path")
 			h.CertFilePath = s.getEscapeString("cert_file_path")
+			h.CertId = s.GetIntNoErr("cert_id")
+			if h.CertId > 0 {
+				h.CertFilePath = ""
+				h.KeyFilePath = ""
+			}
 			h.Target.LocalProxy = s.GetBoolNoErr("local_proxy")
 			h.AutoHttps = s.GetBoolNoErr("AutoHttps")
 

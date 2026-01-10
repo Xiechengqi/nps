@@ -215,6 +215,7 @@
         $.ajax({
             url: '{{.web_base_url}}/cert/getcertlist',
             type: 'POST',
+            data: {offset: 0, limit: 9999, search: ''},
             dataType: 'json',
             success: function(data) {
                 var options = '<option value="0">-- 手动输入证书 --</option>';

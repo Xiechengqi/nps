@@ -20,6 +20,9 @@ func (s *CertController) Index() {
 // GetCertList 获取证书列表（表格数据）
 func (s *CertController) GetCertList() {
 	start, length := s.GetAjaxParams()
+	if length == 0 {
+		length = 50
+	}
 	search := s.getEscapeString("search")
 	list, cnt := file.GetDb().GetCertList(start, length, search)
 	s.AjaxTable(list, cnt, cnt, nil)
