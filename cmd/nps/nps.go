@@ -8,6 +8,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/fatih/color"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -77,7 +78,23 @@ func main() {
 		log.Fatalln("sync embedded web assets error:", err)
 	}
 
-	if err := beego.LoadAppConfig("ini", filepath.Join(common.GetRunPath(), "conf", "nps.conf")); err != nil {
+	// Check if config file exists, generate default if not
+	configPath := filepath.Join(common.GetRunPath(), "conf", "nps.conf")
+	if !common.FileExists(configPath) {
+		// Ensure conf directory exists
+		confDir := filepath.Dir(configPath)
+		if err := os.MkdirAll(confDir, 0755); err != nil {
+			log.Fatalln("create conf directory error:", err)
+		}
+		// Generate default config file
+		defaultConfig := common.GetDefaultNpsConfig()
+		if err := ioutil.WriteFile(configPath, []byte(defaultConfig), 0644); err != nil {
+			log.Fatalln("generate default config file error:", err)
+		}
+		fmt.Println("Generated default config file:", configPath)
+	}
+
+	if err := beego.LoadAppConfig("ini", configPath); err != nil {
 		log.Fatalln("load config file error", err.Error())
 	}
 
