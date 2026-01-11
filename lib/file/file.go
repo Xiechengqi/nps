@@ -182,9 +182,12 @@ func (s *JsonDb) GetCertId() int32 {
 }
 
 func loadSyncMapFromFile(filePath string, f func(value string)) {
+	if !common.FileExists(filePath) {
+		return
+	}
 	b, err := common.ReadAllFromFile(filePath)
 	if err != nil {
-		panic(err)
+		return
 	}
 	for _, v := range strings.Split(string(b), "\n"+common.CONN_DATA_SEQ) {
 		f(v)
